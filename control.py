@@ -8,7 +8,6 @@ class Signal(object):
         self.w = 2 * np.pi * np.arange(steps) / L
         self.A = rng.randn(D, steps) + 1.0j * rng.randn(D, steps)
 
-        self.A[:,:-1] = 0
         power = np.sqrt(np.sum(self.A * self.A.conj()))
         self.A /= power
 
@@ -65,7 +64,7 @@ class PID(Controller):
         self.Ki = Ki
 
         if J is not None:
-            x = np.dot(J, J.T)
+            x = np.dot(J.T, J)
             scale = np.linalg.det(x) ** (1.0 / x.shape[0])
             self.JT = J.T / scale
         else:
@@ -98,14 +97,14 @@ class PID(Controller):
 if __name__ == '__main__':
 
     D_state = 3
-    D_motor = 3
+    D_motor = 5
     dt = 0.001
 
-    env = LinearSystem(d_controlled=D_state, d_motor=D_motor, diagonal=True, scale_add=0)
+    env = LinearSystem(d_controlled=D_state, d_motor=D_motor, diagonal=False, scale_add=5)
     ctrl = PID(100, 10, 1000, J=env.J)
-    desired_state = Signal(3, 5.0, dt=dt, max_freq=1.0)
+    desired_state = Signal(D_state, L=3.0, dt=dt, max_freq=2.0)
 
-    T = 3.0
+    T = 6.0
     steps = int(T / dt)
     t = np.arange(steps) * dt
 
@@ -123,8 +122,8 @@ if __name__ == '__main__':
         sense[:,i] = s
 
     import pylab
-    pylab.plot(state.T, label='state')
-    pylab.plot(desired.T, label='desired')
+    pylab.plot(t, state.T, label='state')
+    pylab.plot(t, desired.T, label='desired')
     #pylab.plot(sense.T, label='sense')
     #pylab.legend(loc='best')
     pylab.show()

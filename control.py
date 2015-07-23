@@ -1,6 +1,26 @@
 import numpy as np
 
 
+class Signal(object):
+    def __init__(self, D, L, dt, max_freq, seed=None):
+        rng = np.random.RandomState(seed=seed)
+        steps = int(max_freq * L)
+        self.w = 2 * np.pi * np.arange(steps) / L
+        self.A = rng.randn(D, steps) + 1.0j * rng.randn(D, steps)
+
+        self.A[:,:-1] = 0
+        power = np.sqrt(np.sum(self.A * self.A.conj()))
+        self.A /= power
+
+    def value(self, t):
+        s = np.sin(self.w * t) * self.A
+        return np.sum(s, axis=1).real
+    def dvalue(self, t):
+        s = np.cos(self.w * t) * self.w * self.A
+        return np.sum(s, axis=1).real
+
+
+
 class Environment(object):
     def __init__(self, seed=None):
         self.rng = np.random.RandomState(seed=seed)
@@ -8,15 +28,16 @@ class Environment(object):
 class LinearSystem(Environment):
     def __init__(self, d_controlled, d_motor, dt=0.001, seed=None,
             scale_mult=10, scale_add=10, diagonal=False,
-            max_sense_noise=0.1, max_motor_noise=0.1):
+            max_sense_noise=0.1, max_motor_noise=0.1,
+            period=5.0, max_freq=1.0):
         super(LinearSystem, self).__init__(seed=seed)
+
 
         self.d_motor = d_motor
         self.d_controlled = d_controlled
         self.dt = dt
 
         self.state = self.rng.randn(d_controlled)
-        self.desired = self.rng.randn(d_controlled)
 
         if diagonal:
             assert d_controlled == d_motor
@@ -75,30 +96,37 @@ class PID(Controller):
 
 
 if __name__ == '__main__':
-    env = LinearSystem(d_controlled=3, d_motor=3, diagonal=True, scale_add=10)
+
+    D_state = 3
+    D_motor = 3
+    dt = 0.001
+
+    env = LinearSystem(d_controlled=D_state, d_motor=D_motor, diagonal=True, scale_add=0)
     ctrl = PID(100, 10, 1000, J=env.J)
+    desired_state = Signal(3, 5.0, dt=dt, max_freq=1.0)
 
-    state = []
-    desired = []
-    sense = []
+    T = 3.0
+    steps = int(T / dt)
+    t = np.arange(steps) * dt
 
-    m = np.zeros(env.d_motor, dtype=float)
-    for i in range(1000):
+    state = np.zeros((D_state, steps), dtype=float)
+    desired = np.zeros((D_state, steps), dtype=float)
+    sense = np.zeros((D_state, steps), dtype=float)
+
+    m = np.zeros(D_motor, dtype=float)
+    for i in range(steps):
+        desired[:,i] = desired_state.value(t[i])
         s = env.step(m)
-        #ds = env.desired - s
+        m = ctrl.step(s, desired[:,i])
 
-        #m = np.dot(ds, env.J.T) * 10
-        m = ctrl.step(s, env.desired)
-
-        state.append(env.state)
-        desired.append(env.desired)
-        sense.append(s)
+        state[:,i] = env.state
+        sense[:,i] = s
 
     import pylab
-    pylab.plot(state, label='state')
-    pylab.plot(desired, label='desired')
-    pylab.plot(sense, label='sense')
-    pylab.legend(loc='best')
+    pylab.plot(state.T, label='state')
+    pylab.plot(desired.T, label='desired')
+    #pylab.plot(sense.T, label='sense')
+    #pylab.legend(loc='best')
     pylab.show()
 
 

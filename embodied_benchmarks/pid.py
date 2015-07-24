@@ -24,7 +24,7 @@ class PID(object):
 
     def step(self, state, desired_state, desired_dstate=0):
         if self.prev_state is None:
-            self.prev_state = None
+            self.prev_state = state
             self.dstate = np.zeros_like(state)
             self.istate = np.zeros_like(state)
         else:

@@ -8,7 +8,10 @@ class Evaluate(object):
         self.controller = controller
         self.desired = desired
 
-    def test(self, T, plot=False):
+    def test(self, T, plot=False, eval_time=None):
+        if eval_time is None:
+            eval_time = T
+
         self.system.reset()
         self.controller.reset()
 
@@ -17,6 +20,9 @@ class Evaluate(object):
 
         steps = int(T / dt)
         m = np.zeros(self.system.d_motor, dtype=float)
+
+        eval_steps = int(eval_time / dt)
+        diff = np.zeros((eval_steps, D), dtype=float)
 
         if plot:
             state = np.zeros((steps, D), dtype=float)
@@ -27,14 +33,19 @@ class Evaluate(object):
         for i in range(steps):
             t = i * dt
             d = self.desired.value(t)
+            dd = self.desired.dvalue(t)
             s = self.system.step(m)
-            m = self.controller.step(s, d)
+            m = self.controller.step(s, d, desired_dstate=dd*0)
 
             if plot:
                 state[i] = self.system.state
                 desired[i] = d
                 sense[i] = s
                 motor[i] = m
+            if i >= steps - eval_steps:
+                diff[i - steps + eval_steps] = s - d
+
+        rmse = np.sqrt(np.mean(diff.flatten()**2))
 
         if plot:
             import pylab
@@ -44,4 +55,13 @@ class Evaluate(object):
             pylab.plot(timesteps, desired, label='desired')
             pylab.subplot(2,1,2)
             pylab.plot(timesteps, motor, label='motor')
+
+            pylab.figure()
+            pylab.plot(timesteps[-eval_steps:], 
+                       diff)
+            pylab.figure()
+            pylab.hist(diff.flatten(), 50)
+
             pylab.show()
+
+        return dict(rmse=rmse)

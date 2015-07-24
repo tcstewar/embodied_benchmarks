@@ -10,11 +10,12 @@ sys = bench.system.LinearSystem(D, D_motor, scale_add=10, seed=1,
                                 motor_delay=0.01, motor_filter=0.01,
                                 sensor_delay=0.01, sensor_filter=0.01,
                                 scale_inertia=0.3,
+                                sense_noise=0.1, motor_noise=0.1,
                                 dt=dt)
 ctrl = bench.pid.PID(16, 4, 10, J=sys.J, dt=dt)
 desired = bench.signal.Signal(D, T / repetitions, dt=dt, max_freq=max_freq)
 eval = bench.evaluate.Evaluate(sys, ctrl, desired)
 
-eval.test(T, plot=True)
+print eval.test(T, plot=False, eval_time= T - T / repetitions)
 
 

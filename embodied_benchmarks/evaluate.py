@@ -39,6 +39,9 @@ class Evaluate(object):
         if plot:
             import pylab
             timesteps = np.arange(steps) * dt
+            pylab.subplot(2,1,1)
             pylab.plot(timesteps, state, label='state')
             pylab.plot(timesteps, desired, label='desired')
+            pylab.subplot(2,1,2)
+            pylab.plot(timesteps, motor, label='motor')
             pylab.show()

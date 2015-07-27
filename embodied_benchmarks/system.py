@@ -5,7 +5,7 @@ class LinearSystem(object):
             scale_mult=10, scale_add=10, diagonal=False,
             sense_noise=0.1, motor_noise=0.1,
             motor_delay=0, motor_filter=None,
-            scale_inertia=0,
+            scale_inertia=0, motor_scale=1.0,
             sensor_delay=0, sensor_filter=None):
 
         self.rng = np.random.RandomState(seed=seed)
@@ -13,6 +13,7 @@ class LinearSystem(object):
         self.d_motor = d_motor
         self.d_state = d_state
         self.dt = dt
+        self.motor_scale = motor_scale
 
         sensor_steps = int(sensor_delay / dt) + 1
         self.sensor_delay = np.zeros((sensor_steps, d_state), dtype=float)
@@ -52,6 +53,7 @@ class LinearSystem(object):
 
 
     def step(self, motor):
+        motor = np.tanh(motor) * self.motor_scale
         self.motor_delay[self.motor_index] = motor
         self.motor_index = (self.motor_index + 1) % len(self.motor_delay)
         motor = self.motor_delay[self.motor_index]

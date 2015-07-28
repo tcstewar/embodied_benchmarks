@@ -32,6 +32,8 @@ class PID(object):
             self.dstate = self.dstate * self.scale + d * (1.0 - self.scale)
             self.istate += self.dt * (desired_state - state)
 
+        self.prev_state = state[:]
+
 
         v = (self.Kp * (desired_state - state) +
              self.Kd * (desired_dstate - self.dstate) +

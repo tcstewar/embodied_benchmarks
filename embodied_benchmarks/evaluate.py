@@ -56,11 +56,11 @@ class Evaluate(object):
             pylab.subplot(2,1,2)
             pylab.plot(timesteps, motor, label='motor')
 
-            pylab.figure()
-            pylab.plot(timesteps[-eval_steps:], 
-                       diff)
-            pylab.figure()
-            pylab.hist(diff.flatten(), 50)
+            #pylab.figure()
+            #pylab.plot(timesteps[-eval_steps:], 
+            #           diff)
+            #pylab.figure()
+            #pylab.hist(diff.flatten(), 50)
 
             pylab.show()
 

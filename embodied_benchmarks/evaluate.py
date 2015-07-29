@@ -22,7 +22,6 @@ class Evaluate(object):
         m = np.zeros(self.system.d_motor, dtype=float)
 
         eval_steps = int(eval_time / dt)
-        diff = np.zeros((eval_steps, D), dtype=float)
 
         if plot:
             state = np.zeros((steps, D), dtype=float)
@@ -42,21 +41,30 @@ class Evaluate(object):
                 desired[i] = d
                 sense[i] = s
                 motor[i] = m
-            if i >= steps - eval_steps:
-                diff[i - steps + eval_steps] = s - d
+
+        s = sense[-eval_steps:,0]
+        d = desired[-eval_steps:,0]
+        corr = np.correlate(s, d, 'full')
+        index = np.argmax(corr)
+        delay = index - eval_steps
+        diff = desired[-eval_steps - delay: -delay] - sense[-eval_steps:]
 
         rmse = np.sqrt(np.mean(diff.flatten()**2))
 
         if plot:
             import pylab
             timesteps = np.arange(steps) * dt
-            pylab.subplot(2,1,1)
-            pylab.plot(timesteps, state, label='state')
+            pylab.subplot(3,1,1)
             pylab.plot(timesteps, desired, label='desired')
-            pylab.subplot(2,1,2)
+            pylab.plot(timesteps, state, label='state')
+            pylab.subplot(3,1,2)
+            pylab.plot(timesteps[:-delay], desired[:-delay], label='desired')
+            pylab.plot(timesteps[:-delay], state[delay:], label='state')
+            pylab.subplot(3,1,3)
             pylab.plot(timesteps, motor, label='motor')
 
             #pylab.figure()
+            #pylab.plot(np.correlate(s, d, 'full'))
             #pylab.plot(timesteps[-eval_steps:], 
             #           diff)
             #pylab.figure()
@@ -64,4 +72,4 @@ class Evaluate(object):
 
             pylab.show()
 
-        return dict(rmse=rmse)
+        return dict(rmse=rmse, delay=dt * delay)

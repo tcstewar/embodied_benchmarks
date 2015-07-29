@@ -1,12 +1,13 @@
 import numpy as np
 
-class LinearSystem(object):
+class System(object):
     def __init__(self, d_state, d_motor, dt=0.001, seed=None,
-            scale_mult=10, scale_add=10, diagonal=False,
+            scale_mult=10, scale_add=10, diagonal=True,
             sense_noise=0.1, motor_noise=0.1,
             motor_delay=0, motor_filter=None,
             scale_inertia=0, motor_scale=1.0,
-            sensor_delay=0, sensor_filter=None):
+            sensor_delay=0, sensor_filter=None,
+            nonlinear=True):
 
         self.rng = np.random.RandomState(seed=seed)
 
@@ -42,7 +43,14 @@ class LinearSystem(object):
         self.sense_noise = sense_noise
         self.motor_noise = motor_noise
 
-        self.additive = self.rng.randn(d_state) * scale_add
+        self.nonlinear = nonlinear
+        self.additive_a = self.rng.randn(d_state) 
+        if nonlinear:
+            D = len(self.nonlinearity(self.sensor))
+            self.additive_b = self.rng.randn(d_state, D)
+            self.additive_c = self.rng.randn(d_state) 
+            self.additive_d = self.rng.randn(d_state)
+        self.scale_add = scale_add
 
         self.reset()
     def reset(self):
@@ -50,6 +58,9 @@ class LinearSystem(object):
         self.dstate = np.zeros_like(self.state)
         self.sensor_delay *= 0
         self.motor_delay *= 0
+
+    def nonlinearity(self, q):
+        return np.hstack([q, np.sin(q)])#, q**2, q**3])
 
 
     def step(self, motor):
@@ -62,7 +73,15 @@ class LinearSystem(object):
         self.motor = (self.motor * self.motor_filter_scale +
                       motor * (1.0 - self.motor_filter_scale))
         self.dstate *= self.scale_inertia
-        self.dstate += (np.dot(self.motor, self.J) + self.additive)
+
+        if self.nonlinear:
+            q2 = self.nonlinearity(self.additive_d * self.state + 
+                            self.additive_c)
+            additive = np.dot(self.additive_b, q2) + self.additive_a
+            additive *= self.scale_add
+        else:
+            additive = self.additive_a * self.scale_add
+        self.dstate += (np.dot(self.motor, self.J) + additive)
         self.state = self.state + self.dstate * self.dt
 
         sensor = self.state + self.rng.randn(self.d_state) * self.sense_noise

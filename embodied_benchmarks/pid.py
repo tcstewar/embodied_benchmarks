@@ -41,3 +41,8 @@ class PID(object):
         if self.JT is not None:
             v = np.dot(v, self.JT)
         return v
+
+class PDAdapt(PID):
+    def __init__(self, Kp, Kd=0, tau_d=0.1, dt=0.001):
+        super(PDAdapt, self).__init__(Kp=Kp, Kd=Kd, tau_d=tau_d, dt=dt)
+

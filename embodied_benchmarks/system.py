@@ -2,7 +2,7 @@ import numpy as np
 
 class System(object):
     def __init__(self, d_state, d_motor, dt=0.001, seed=None,
-            scale_mult=10, scale_add=10, diagonal=True,
+            scale_mult=1, scale_add=1, diagonal=True,
             sense_noise=0.1, motor_noise=0.1,
             motor_delay=0, motor_filter=None,
             scale_inertia=0, motor_scale=1.0,
@@ -37,7 +37,8 @@ class System(object):
 
         if diagonal:
             assert d_state == d_motor
-            self.J = np.abs(np.diag(self.rng.randn(d_motor))) * scale_mult
+            self.J = np.eye(d_motor) * scale_mult
+            #self.J = np.abs(np.diag(self.rng.randn(d_motor))) * scale_mult
         else:
             self.J = self.rng.randn(d_motor, d_state) * scale_mult
         self.sense_noise = sense_noise

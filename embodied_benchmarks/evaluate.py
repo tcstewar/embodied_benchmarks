@@ -48,6 +48,7 @@ class Evaluate(object):
 
         index = np.argmax(corr)
         delay = index - eval_steps
+        if delay <= 0: delay = 1
         diff = desired[-eval_steps - delay: -delay] - sense[-eval_steps:]
 
         rmse = np.sqrt(np.mean(diff.flatten()**2))

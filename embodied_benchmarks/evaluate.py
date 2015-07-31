@@ -45,6 +45,7 @@ class Evaluate(object):
         s = sense[-eval_steps:,0]
         d = desired[-eval_steps:,0]
         corr = np.correlate(s, d, 'full')
+
         index = np.argmax(corr)
         delay = index - eval_steps
         diff = desired[-eval_steps - delay: -delay] - sense[-eval_steps:]
@@ -58,10 +59,11 @@ class Evaluate(object):
             pylab.plot(timesteps, desired, label='desired')
             pylab.plot(timesteps, state, label='state')
             pylab.subplot(3,1,2)
+            #pylab.plot(corr)
             pylab.plot(timesteps[:-delay], desired[:-delay], label='desired')
             pylab.plot(timesteps[:-delay], state[delay:], label='state')
             pylab.subplot(3,1,3)
-            pylab.plot(timesteps, motor, label='motor')
+            pylab.plot(timesteps[:-delay], desired[:-delay] - state[delay:])
 
             #pylab.figure()
             #pylab.plot(np.correlate(s, d, 'full'))
